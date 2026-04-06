@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sensitive Price Changes since the War on Iran</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f6fa; color: #1f2937; }
+
+  header { padding: 20px 28px 12px; border-bottom: 1px solid #e5e7eb; background: #fff; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  header h1 { font-size: 1.15rem; font-weight: 700; color: #111827; letter-spacing: 0.01em; }
+  header .meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  header .updated { font-size: 0.75rem; color: #6b7280; }
+
+  /* Sources button */
+  .src-btn { background: #f3f4f6; border: 1px solid #d1d5db; color: #374151; font-size: 0.72rem; padding: 5px 12px; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
+  .src-btn:hover { background: #e5e7eb; color: #111827; }
+
+  /* Modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px 28px; max-width: 640px; width: 92%; max-height: 80vh; overflow-y: auto; position: relative; box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
+  .modal h3 { color: #111827; font-size: 0.95rem; margin-bottom: 16px; }
+  .modal table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+  .modal th { color: #6b7280; text-align: left; padding: 5px 8px; border-bottom: 1px solid #e5e7eb; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.06em; }
+  .modal td { padding: 7px 8px; border-bottom: 1px solid #f3f4f6; color: #374151; vertical-align: top; }
+  .modal td:first-child { color: #b45309; white-space: nowrap; font-weight: 600; }
+  .modal td a { color: #2563eb; text-decoration: none; }
+  .modal td a:hover { text-decoration: underline; }
+  .modal-close { position: absolute; top: 14px; right: 16px; background: none; border: none; color: #9ca3af; font-size: 1.2rem; cursor: pointer; line-height: 1; }
+  .modal-close:hover { color: #374151; }
+  .modal .note { font-size: 0.7rem; color: #9ca3af; margin-top: 14px; font-style: italic; }
+
+  /* Controls */
+  .controls { padding: 16px 28px; background: #fff; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .slider-wrap { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 200px; }
+  .slider-wrap label { font-size: 0.75rem; color: #6b7280; }
+  .slider-row { display: flex; align-items: center; gap: 10px; }
+  .slider-row span { font-size: 0.78rem; color: #374151; white-space: nowrap; min-width: 80px; }
+  input[type=range] { flex: 1; accent-color: #2563eb; height: 4px; }
+  .range-labels { display: flex; justify-content: space-between; font-size: 0.7rem; color: #9ca3af; }
+
+  /* KPI bar */
+  .kpi-bar { display: flex; gap: 10px; padding: 14px 28px; overflow-x: auto; background: #f5f6fa; }
+  .kpi { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 16px; min-width: 130px; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .kpi .label { font-size: 0.68rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .kpi .value { font-size: 1.15rem; font-weight: 700; color: #111827; }
+  .kpi .change { font-size: 0.72rem; margin-top: 2px; }
+  .up { color: #dc2626; }
+  .down { color: #16a34a; }
+  .flat { color: #9ca3af; }
+
+  /* Charts grid */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px; padding: 16px 28px 28px; }
+  .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .card h2 { font-size: 0.82rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 14px; }
+  .chart-wrap { position: relative; height: 200px; }
+  .event-note { font-size: 0.7rem; color: #9ca3af; margin-top: 8px; border-left: 2px solid #e5e7eb; padding-left: 8px; font-style: italic; min-height: 16px; }
+  .helium-alert { font-size: 0.68rem; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 7px 10px; margin-top: 8px; color: #1d4ed8; line-height: 1.5; }
+
+  .footer { text-align: center; font-size: 0.7rem; color: #d1d5db; padding: 16px; }
+  @media (max-width: 600px) { .grid { grid-template-columns: 1fr; padding: 12px 14px 24px; } .kpi-bar { padding: 10px 14px; } header, .controls { padding: 14px; } }
+</style>
+</head>
+<body>
+
+<!-- SOURCES MODAL -->
+<div class="modal-overlay" id="srcModal">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('srcModal').classList.remove('open')">✕</button>
+    <h3>📚 Data Sources by Series</h3>
+    <table>
+      <thead><tr><th>Series</th><th>Benchmark / Source</th><th>Frequency</th></tr></thead>
+      <tbody>
+        <tr><td>Brent Crude</td><td><a href="https://www.theice.com/products/219/Brent-Crude-Futures" target="_blank">ICE Brent Crude Futures</a> · Reuters commodities</td><td>Daily</td></tr>
+        <tr><td>WTI Crude</td><td><a href="https://www.cmegroup.com/markets/energy/crude-oil/light-sweet-crude.html" target="_blank">CME NYMEX WTI Light Sweet Crude</a> · Reuters</td><td>Daily</td></tr>
+        <tr><td>JKM (LNG)</td><td><a href="https://www.spglobal.com/commodityinsights/en/market-insights/latest-news/lng/jkm" target="_blank">S&P Global Platts JKM</a> — Japan Korea Marker, Asia LNG spot</td><td>Daily</td></tr>
+        <tr><td>TTF (LNG/Gas)</td><td><a href="https://www.ice.com/products/27996665/Dutch-TTF-Gas-Futures" target="_blank">ICE Dutch TTF Natural Gas Futures</a> — European gas hub</td><td>Daily</td></tr>
+        <tr><td>Henry Hub</td><td><a href="https://www.cmegroup.com/markets/energy/natural-gas/natural-gas.html" target="_blank">CME NYMEX Henry Hub Natural Gas</a></td><td>Daily</td></tr>
+        <tr><td>Urea</td><td><a href="https://www.investing.com/commodities/urea-granular-fob-middle-east-futures" target="_blank">Urea Granular FOB Middle East</a> — futures/spot via Investing.com, ChemAnalyst. <strong>Switched from US Gulf/Black Sea on Mar 25.</strong></td><td>Daily (futures)</td></tr>
+        <tr><td>DAP</td><td><a href="https://www.argusmedia.com/en/methodology/key-commodity-prices/argus-india-dap-cfr" target="_blank">Argus India DAP CFR</a> — India import benchmark via Argus Media, ChemAnalyst. <strong>Switched from US retail DTN on Mar 25.</strong></td><td>Weekly</td></tr>
+        <tr><td>Potash MOP</td><td><a href="https://www.icis.com/explore/resources/news/2026/03/potash" target="_blank">ICIS / Green Markets</a> — standard MOP fob</td><td>Weekly</td></tr>
+        <tr><td>Helium (NE Asia spot)</td><td><a href="https://www.openpr.com/news/4433502/global-helium-prices-march-2026-sharp-rise-northeast-asia" target="_blank">OpenPR / ChemAnalyst</a> — NE Asia spot, estimated from available reports. Reflects Ras Laffan shutdown impact directly. <strong>NA contract series dropped Mar 25 (stale quarterly repricing).</strong></td><td>Weekly est.</td></tr>
+        <tr><td>FBX11</td><td><a href="https://www.freightos.com/freightos-baltic-index/" target="_blank">Freightos Baltic Index FBX11</a> — East Asia → North Europe, 40ft container (FEU). <strong>User-provided weekly Friday values.</strong></td><td>Weekly (Fri)</td></tr>
+        <tr><td>Historical backfill (Feb 27 – Mar 22)</td><td><a href="https://tradingeconomics.com" target="_blank">Trading Economics</a>, Reuters, MacroTrends, <a href="https://fortune.com/article/price-of-oil-03-20-2026/" target="_blank">Fortune</a>, <a href="https://www.cnbc.com/2026/03/19/oil-jumps-iran-strikes-qatar-lng-facility-supply-worries.html" target="_blank">CNBC</a>, <a href="https://globallnghub.com/natural-gas-prices-weekly-update-jkm-ttf-and-henry-hub-9-march-2026.html" target="_blank">Global LNG Hub</a></td><td>Backfilled</td></tr>
+      </tbody>
+    </table>
+    <p class="note">⚠️ Helium contract prices are opaque and not publicly traded. NA contract prices reflect long-term agreements and lag spot market stress by weeks. NE Asia spot estimates are derived from available market reports and are indicative only.</p>
+  </div>
+</div>
+
+<header>
+  <div>
+    <h1>Sensitive Price Changes since the War on Iran</h1>
+    <div style="font-size:0.75rem;color:#6b7280;margin-top:3px;">Updated every market day</div>
+  </div>
+  <div class="meta">
+    <span class="updated">Last updated: <strong id="lastDate">—</strong><br><span id="fetchedAt" style="font-size:0.7rem;color:#9ca3af;"></span></span>
+    <button class="src-btn" onclick="document.getElementById('srcModal').classList.add('open')">📚 Sources</button>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="slider-wrap">
+    <label>DATE RANGE — <span id="rangeLabel"></span></label>
+    <div class="slider-row">
+      <span id="startLabel"></span>
+      <input type="range" id="startSlider" min="0" value="0">
+      <input type="range" id="endSlider" min="0" value="0">
+      <span id="endLabel"></span>
+    </div>
+    <div class="range-labels"><span>Start</span><span>End</span></div>
+  </div>
+</div>
+
+<div class="kpi-bar" id="kpiBar"></div>
+
+<div class="grid">
+  <div class="card">
+    <h2>🛢️ Crude Oil (USD/bbl)</h2>
+    <div class="chart-wrap"><canvas id="oilChart"></canvas></div>
+    <div class="event-note" id="oilNote"></div>
+  </div>
+  <div class="card">
+    <h2>🔥 LNG / Natural Gas (USD/MMBtu)</h2>
+    <div class="chart-wrap"><canvas id="gasChart"></canvas></div>
+    <div class="event-note" id="gasNote"></div>
+  </div>
+  <div class="card">
+    <h2>🌾 Fertilizers — Asian Delivery (USD/mt)</h2>
+    <div class="chart-wrap"><canvas id="fertChart"></canvas></div>
+    <div class="event-note" id="fertNote"></div>
+  </div>
+  <div class="card">
+    <h2>🫧 Helium — NE Asia Spot (USD/Mcf)</h2>
+    <div class="chart-wrap"><canvas id="heliumChart"></canvas></div>
+    <div class="helium-alert">
+      ⚡ <strong>Why NE Asia spot?</strong> The Ras Laffan shutdown took offline ~33% of global helium supply. NE Asia spot prices (used by chip fabs for EUV lithography cooling) reflect the real-time shortage — surging from ~$79 to ~$153/Mcf since the war began.
+    </div>
+  </div>
+  <div class="card" style="grid-column: 1 / -1;">
+    <h2>🚢 FBX11 — East Asia → North Europe Container Freight (USD/FEU, weekly Fridays)</h2>
+    <div class="chart-wrap" style="height:180px"><canvas id="fbxChart"></canvas></div>
+    <div class="event-note" id="fbxNote"></div>
+  </div>
+</div>
+
+<div class="footer">Data sourced from public benchmarks · Regenerated daily by Claude · Srinivasan · <a href="mailto:tgwashdc@tradesentinel.org" style="color:#9ca3af;">tgwashdc@tradesentinel.org</a></div>
+
+<script>
+// ── EMBEDDED DATA (regenerated daily by scheduled task) ──────────────────
+// helium_nea = NE Asia spot helium (USD/Mcf), estimated from available market reports
+const RAW = [
+  {date:"2026-02-27",brent:72.80,wti:69.08,jkm:12.50,ttf:11.10,hh:2.99,urea:602,dap:767,potash:448,helium:64.00,helium_nea:79.00,fbx11:2460.00,note:"Pre-Hormuz close; US-Israel strikes Iran that weekend"},
+  {date:"2026-03-02",brent:79.45,wti:74.80,jkm:15.20,ttf:14.50,hh:3.00,urea:635,dap:805,potash:462,helium:69.00,helium_nea:95.00,fbx11:null,note:"Brent +9% on Hormuz closure; Ras Laffan halts LNG and helium ops"},
+  {date:"2026-03-03",brent:83.00,wti:77.50,jkm:23.00,ttf:18.50,hh:3.01,urea:635,dap:805,potash:462,helium:69.00,helium_nea:108.00,fbx11:null,note:"JKM spikes on Ras Laffan airstrike; TTF surges to $18.5"},
+  {date:"2026-03-04",brent:80.50,wti:75.00,jkm:21.00,ttf:16.70,hh:3.01,urea:635,dap:805,potash:462,helium:69.00,helium_nea:112.00,fbx11:null,note:"Energy consolidates; helium spot tightens on Qatar shortage"},
+  {date:"2026-03-05",brent:82.31,wti:76.29,jkm:20.50,ttf:17.20,hh:3.02,urea:635,dap:805,potash:462,helium:69.00,helium_nea:115.00,fbx11:null,note:"Hormuz tanker traffic at standstill; helium inventories draw"},
+  {date:"2026-03-06",brent:93.10,wti:86.80,jkm:20.50,ttf:18.10,hh:3.03,urea:635,dap:805,potash:462,helium:69.00,helium_nea:118.00,fbx11:2614.20,note:"Brent week +27.9%; Qatar helium disruption spreads to chip supply chain"},
+  {date:"2026-03-09",brent:94.00,wti:87.00,jkm:20.50,ttf:17.50,hh:3.02,urea:674,dap:851,potash:488,helium:69.00,helium_nea:122.00,fbx11:null,note:"Chip fabs activate helium emergency reserves; NE Asia spot tightens"},
+  {date:"2026-03-10",brent:96.00,wti:88.50,jkm:19.00,ttf:16.20,hh:3.03,urea:674,dap:851,potash:488,helium:69.00,helium_nea:128.00,fbx11:null,note:"Qatar helium shutdown enters week 2; EUV fab inventories on 2-week clock"},
+  {date:"2026-03-11",brent:98.00,wti:90.00,jkm:17.80,ttf:17.20,hh:3.04,urea:674,dap:851,potash:488,helium:69.00,helium_nea:132.00,fbx11:null,note:"Tom's Hardware: chip supply chain on helium two-week clock"},
+  {date:"2026-03-12",brent:100.46,wti:92.00,jkm:18.50,ttf:17.00,hh:3.04,urea:674,dap:851,potash:488,helium:69.00,helium_nea:137.00,fbx11:null,note:"Brent first close above $100 since Aug 2022; helium spot surges"},
+  {date:"2026-03-13",brent:103.14,wti:94.14,jkm:18.80,ttf:16.90,hh:3.05,urea:674,dap:851,potash:488,helium:69.00,helium_nea:140.00,fbx11:2883.40,note:"Helium spot in NE Asia approaches $140; semiconductor alerts issued"},
+  {date:"2026-03-16",brent:102.14,wti:92.90,jkm:17.80,ttf:17.00,hh:3.03,urea:674,dap:851,potash:488,helium:69.00,helium_nea:144.00,fbx11:null,note:"CNBC: Iran war threatening helium supply chains for chip fabs"},
+  {date:"2026-03-17",brent:102.98,wti:93.50,jkm:17.50,ttf:17.80,hh:3.05,urea:674,dap:851,potash:488,helium:69.00,helium_nea:147.00,fbx11:null,note:"Fortune: Iran war cuts off helium from Qatar affecting AI chip boom"},
+  {date:"2026-03-18",brent:108.78,wti:98.78,jkm:21.90,ttf:18.33,hh:3.07,urea:674,dap:851,potash:488,helium:69.00,helium_nea:150.00,fbx11:null,note:"Second Ras Laffan strike; helium NE Asia spot breaches $150/Mcf"},
+  {date:"2026-03-19",brent:113.71,wti:103.21,jkm:20.50,ttf:24.19,hh:3.25,urea:674,dap:851,potash:488,helium:69.00,helium_nea:152.00,fbx11:null,note:"Brent briefly $119; helium spot zones breach $1,000/Mcf in shortage areas"},
+  {date:"2026-03-20",brent:107.40,wti:97.00,jkm:19.20,ttf:24.19,hh:3.15,urea:674,dap:851,potash:488,helium:69.00,helium_nea:153.00,fbx11:2870.40,note:"Brent pullback; helium NA contract still flat — repricing due next quarter"},
+  {date:"2026-03-23",brent:109.00,wti:98.23,jkm:18.50,ttf:24.19,hh:3.10,urea:674,dap:851,potash:488,helium:69.00,helium_nea:153.00,fbx11:2870.40,note:"Hormuz closure 5th week; helium NE Asia 120% premium over NA contract"},
+  {date:"2026-03-24",brent:104.10,wti:92.39,jkm:17.50,ttf:19.33,hh:2.90,urea:674,dap:851,potash:488,helium:69.00,helium_nea:152.70,fbx11:null,note:"Brent recovery +4% to $104; TTF -20% as Trump-Iran talks advance"},
+  {date:"2026-03-25",brent:107.20,wti:90.98,jkm:20.53,ttf:18.29,hh:2.90,urea:665,dap:760,potash:488,helium:69.00,helium_nea:152.70,fbx11:null,note:"Benchmark switch: Urea→FOB ME $665, DAP→CFR India $760; Brent +3%; JKM rebounds to $20.5"},
+  {date:"2026-03-26",brent:104.50,wti:91.64,jkm:19.99,ttf:18.31,hh:2.90,urea:677,dap:760,potash:487,helium:69.00,helium_nea:152.70,fbx11:null,note:"Iran rejects US peace plan; Brent +2% above $104; WTI battles $92; Urea rises on Hormuz supply squeeze"},
+  {date:"2026-03-27",brent:110.20,wti:96.64,jkm:21.50,ttf:19.80,hh:3.05,urea:680,dap:762,potash:488,helium:69.00,helium_nea:154.00,fbx11:3150.00,note:"Brent tops $110 again; Chinese ships turned back from Hormuz; FBX11 +9.8% on freight crisis escalation"},
+  {date:"2026-03-28",brent:112.57,wti:99.64,jkm:20.50,ttf:17.80,hh:3.05,urea:683,dap:762,potash:488,helium:69.00,helium_nea:155.00,fbx11:null,note:"Weekend carry — Fri close: Brent $112.57 highest since Jul 2022; WTI $99.64 breached $100 intraday for first time since crisis"},
+  {date:"2026-03-29",brent:112.57,wti:99.64,jkm:20.40,ttf:17.83,hh:3.05,urea:750,dap:762,potash:488,helium:69.00,helium_nea:155.00,fbx11:null,note:"Sunday weekend carry; Urea FOB ME futures surge to $750 (+9.8%) on Hormuz supply disruption; JKM $20.40 steady; TTF eases to $17.83"},
+  {date:"2026-03-30",brent:114.70,wti:101.80,jkm:20.40,ttf:18.90,hh:3.05,urea:755,dap:762,potash:488,helium:69.00,helium_nea:155.00,fbx11:null,note:"Houthis enter Israel-Iran war; Iran Hormuz yuan toll; Brent +51% MoM record"},
+  {date:"2026-03-31",brent:106.56,wti:102.12,jkm:20.40,ttf:18.00,hh:3.06,urea:750,dap:762,potash:488,helium:69.00,helium_nea:152.70,fbx11:null,note:"Brent -7.1% to $106.56 on Middle East diplomatic developments; WTI $102.12; April 6 Kharg Island deadline looms; Brent +60% MoM (largest since 1988)"},
+  {date:"2026-04-01",brent:103.97,wti:100.49,jkm:20.40,ttf:18.00,hh:3.03,urea:750,dap:762,potash:488,helium:69.00,helium_nea:152.70,fbx11:null,note:"Iran de-escalation deflates war premium; Brent -2.4% as Trump signals end of war in 2–3 weeks; Brent slides toward $100"},
+  {date:"2026-04-02",brent:109.03,wti:111.54,jkm:20.13,ttf:18.39,hh:3.05,urea:750,dap:762,potash:488,helium:69.00,helium_nea:152.70,fbx11:null,note:"Trump vows 'extremely hard' hits on Iran in 2–3 weeks; WTI May settled +11% to $111.54, Brent +8% to $109.03 — biggest single-day oil surge since crisis began; war premium fully reinstated"},
+  {date:"2026-04-03",brent:105.80,wti:107.50,jkm:19.83,ttf:17.83,hh:3.05,urea:750,dap:762,potash:488,helium:69.00,helium_nea:152.70,fbx11:3320.00,note:"Oil corrects ~3% on war-resolution optimism: Brent $105.80 (-3%), WTI $107.50 (-3.6%); WTI remains above Brent as Brent-WTI spread at 2026 lows; TTF eases to $17.83; FBX11 $3,320 as Hormuz closure persists"},
+  {date:"2026-04-04",brent:105.80,wti:107.50,jkm:19.83,ttf:17.83,hh:3.05,urea:750,dap:762,potash:488,helium:69.00,helium_nea:152.70,fbx11:null,note:"Weekend carry — April 6 Kharg deadline looms (8pm ET); US precision strikes hit 90+ Kharg military sites; Iran FM Araghchi rejects all talks; Houthis launch missiles at Israel (first direct involvement); markets closed"},
+  {date:"2026-04-05",brent:105.80,wti:107.50,jkm:19.83,ttf:17.83,hh:3.05,urea:750,dap:762,potash:488,helium:69.00,helium_nea:152.70,fbx11:null,note:"Sunday carry — April 6 deadline tomorrow (8pm ET); Trump threatens obliteration of Kharg oil wells and all Iranian energy plants if Hormuz not reopened; helium NE Asia $152.70 amid volatile weekly swings as QatarEnergy force majeure ripples through chip/MRI supply chains"},
+  {date:"2026-04-06",brent:108.70,wti:112.10,jkm:19.83,ttf:17.83,hh:3.05,urea:750,dap:762,potash:488,helium:69.00,helium_nea:152.70,fbx11:null,note:"April 6 deadline day (8pm ET) — Brent surges on open after weekend Kharg strikes, moderates to $108.70 on Axios-reported 45-day US-Iran truce talks; WTI $112.10 maintains premium to Brent; no deal imminent per analysts; Hormuz remains closed"},
+];
+
+// ── CHART REGISTRY ────────────────────────────────────────────────────────
+const charts = {};
+const COLORS = {
+  brent:'#b45309', wti:'#d97706', jkm:'#2563eb', ttf:'#7c3aed',
+  hh:'#059669', urea:'#7c3aed', dap:'#db2777', potash:'#ea580c',
+  helium_na:'#0891b2', helium_nea:'#dc2626', fbx11:'#9333ea'
+};
+
+function fmtDate(d){ const p=d.split('-'); return `${p[1]}/${p[2]}`; }
+function pct(a,b){ if(a==null||b==null||b===0) return null; return ((a-b)/b*100).toFixed(1); }
+
+function makeChart(id, datasets, yLabel){
+  const ctx = document.getElementById(id).getContext('2d');
+  if(charts[id]) charts[id].destroy();
+  charts[id] = new Chart(ctx, {
+    type:'line',
+    data:{ datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{
+        legend:{ labels:{ color:'#374151', font:{size:11}, boxWidth:12, padding:10 } },
+        tooltip:{
+          backgroundColor:'#fff', titleColor:'#111827', bodyColor:'#374151',
+          borderColor:'#e5e7eb', borderWidth:1,
+          callbacks:{ label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) : 'N/A'}` }
+        }
+      },
+      scales:{
+        x:{ ticks:{ color:'#9ca3af', font:{size:10}, maxRotation:0 }, grid:{ color:'#f3f4f6' } },
+        y:{ ticks:{ color:'#9ca3af', font:{size:10} }, grid:{ color:'#f3f4f6' },
+            title:{ display:true, text:yLabel, color:'#9ca3af', font:{size:10} } }
+      }
+    }
+  });
+}
+
+function ds(label, data, color, dashed){
+  return {
+    label, data,
+    borderColor: color, backgroundColor: color+'22',
+    borderWidth: dashed ? 1.5 : 2,
+    borderDash: dashed ? [4,3] : [],
+    pointRadius: 3, pointHoverRadius: 5,
+    fill: false, tension: 0.3, spanGaps: true
+  };
+}
+
+function render(){
+  const s = parseInt(document.getElementById('startSlider').value);
+  const e = parseInt(document.getElementById('endSlider').value);
+  const slice = RAW.slice(s, e+1);
+  const labels = slice.map(r => fmtDate(r.date));
+
+  document.getElementById('startLabel').textContent = fmtDate(RAW[s].date);
+  document.getElementById('endLabel').textContent   = fmtDate(RAW[e].date);
+  document.getElementById('rangeLabel').textContent = `${fmtDate(RAW[s].date)} → ${fmtDate(RAW[e].date)}  (${slice.length} days)`;
+  document.getElementById('lastDate').textContent = RAW[RAW.length-1].date;
+  document.getElementById('fetchedAt').textContent = 'Fetched: ' + new Date().toUTCString();
+
+  const last = slice[slice.length-1];
+
+  // KPI bar
+  const kpis = [
+    { label:'Brent',      val:last.brent,      unit:'$/bbl',    chg: pct(last.brent,  slice[0].brent)  },
+    { label:'WTI',        val:last.wti,        unit:'$/bbl',    chg: pct(last.wti,    slice[0].wti)    },
+    { label:'JKM',        val:last.jkm,        unit:'$/MMBtu',  chg: pct(last.jkm,    slice[0].jkm)    },
+    { label:'TTF',        val:last.ttf,        unit:'$/MMBtu',  chg: pct(last.ttf,    slice[0].ttf)    },
+    { label:'Henry Hub',  val:last.hh,         unit:'$/MMBtu',  chg: pct(last.hh,     slice[0].hh)     },
+    { label:'Urea FOB ME', val:last.urea,       unit:'$/mt',     chg: pct(last.urea,   slice[0].urea)   },
+    { label:'DAP CFR IN', val:last.dap,        unit:'$/mt',     chg: pct(last.dap,    slice[0].dap)    },
+    { label:'Potash',     val:last.potash,     unit:'$/mt',     chg: pct(last.potash, slice[0].potash) },
+    { label:'He Asia spot',val:last.helium_nea,unit:'$/Mcf',   chg: pct(last.helium_nea, slice[0].helium_nea) },
+    { label:'FBX11',      val: slice.filter(r=>r.fbx11!=null).slice(-1)[0]?.fbx11 ?? null, unit:'$/FEU',
+      chg: (()=>{ const v=slice.filter(r=>r.fbx11!=null); return v.length>=2?pct(v[v.length-1].fbx11,v[0].fbx11):null; })() },
+  ];
+  document.getElementById('kpiBar').innerHTML = kpis.map(k => {
+    const c = k.chg !== null ? parseFloat(k.chg) : null;
+    const cls = c === null ? 'flat' : c > 0 ? 'up' : c < 0 ? 'down' : 'flat';
+    const arrow = c === null ? '' : c > 0 ? '▲' : c < 0 ? '▼' : '—';
+    const chgTxt = c !== null ? `${arrow} ${Math.abs(c)}% vs start` : 'weekly only';
+    return `<div class="kpi"><div class="label">${k.label}</div>
+      <div class="value">${k.val != null ? k.val.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : 'N/A'}<small style="font-size:0.6rem;color:#6b7280;margin-left:3px">${k.unit}</small></div>
+      <div class="change ${cls}">${chgTxt}</div></div>`;
+  }).join('');
+
+  // Oil chart
+  makeChart('oilChart',[
+    ds('Brent (ICE)',  slice.map((r,i)=>({x:labels[i],y:r.brent})), COLORS.brent),
+    ds('WTI (NYMEX)',  slice.map((r,i)=>({x:labels[i],y:r.wti})),   COLORS.wti, true),
+  ], 'USD / bbl');
+
+  // Gas chart
+  makeChart('gasChart',[
+    ds('JKM',        slice.map((r,i)=>({x:labels[i],y:r.jkm})), COLORS.jkm),
+    ds('TTF',        slice.map((r,i)=>({x:labels[i],y:r.ttf})), COLORS.ttf),
+    ds('Henry Hub',  slice.map((r,i)=>({x:labels[i],y:r.hh})),  COLORS.hh, true),
+  ], 'USD / MMBtu');
+
+  // Fertilizer chart
+  makeChart('fertChart',[
+    ds('Urea FOB ME',   slice.map((r,i)=>({x:labels[i],y:r.urea})),   COLORS.urea),
+    ds('DAP CFR India', slice.map((r,i)=>({x:labels[i],y:r.dap})),    COLORS.dap),
+    ds('Potash MOP',    slice.map((r,i)=>({x:labels[i],y:r.potash})), COLORS.potash, true),
+  ], 'USD / mt');
+
+  // Helium chart — NE Asia spot only
+  makeChart('heliumChart',[
+    ds('NE Asia Spot (est.)',         slice.map((r,i)=>({x:labels[i],y:r.helium_nea})), COLORS.helium_nea),
+  ], 'USD / Mcf');
+
+  // FBX11 — weekly scatter+line
+  const fbxData = slice.map((r,i)=>({x:labels[i], y:r.fbx11}));
+  makeChart('fbxChart',[{
+    label:'FBX11 (weekly Fridays)',
+    data: fbxData,
+    borderColor: COLORS.fbx11, backgroundColor: COLORS.fbx11+'33',
+    borderWidth: 2,
+    pointRadius: fbxData.map(d=>d.y!=null?5:0),
+    pointBackgroundColor: COLORS.fbx11,
+    fill: true, tension: 0.3, spanGaps: true
+  }], 'USD / FEU');
+
+  // Event notes — per-chart customized footers
+  const d = RAW[e], dt = d.date;
+  const prev = e > 0 ? RAW[e-1] : d;
+  function chgStr(cur,prv,unit){ if(!cur||!prv) return ''; const c=((cur-prv)/prv*100).toFixed(1); return `${c>0?'+':''}${c}%`; }
+  document.getElementById('oilNote').textContent = `📌 ${dt}: Brent $${d.brent.toFixed(2)}/bbl (${chgStr(d.brent,prev.brent)}) · WTI $${d.wti.toFixed(2)}/bbl (${chgStr(d.wti,prev.wti)})`;
+  document.getElementById('gasNote').textContent = `📌 ${dt}: JKM $${d.jkm.toFixed(2)} (${chgStr(d.jkm,prev.jkm)}) · TTF $${d.ttf.toFixed(2)} (${chgStr(d.ttf,prev.ttf)}) · HH $${d.hh.toFixed(2)} (${chgStr(d.hh,prev.hh)})`;
+  document.getElementById('fertNote').textContent = `📌 ${dt}: Urea FOB ME $${d.urea}/mt (${chgStr(d.urea,prev.urea)||'flat'}) · DAP CFR India $${d.dap}/mt (${chgStr(d.dap,prev.dap)||'flat'}) · Potash $${d.potash}/mt`;
+  const fbxVals = slice.filter(r=>r.fbx11!=null); const lastFbx = fbxVals.length ? fbxVals[fbxVals.length-1] : null;
+  document.getElementById('fbxNote').textContent = lastFbx ? `📌 ${lastFbx.date}: FBX11 $${lastFbx.fbx11.toLocaleString()}/FEU (weekly Friday update)` : '📌 No FBX11 data in selected range';
+}
+
+// Init sliders
+const maxIdx = RAW.length - 1;
+['startSlider','endSlider'].forEach(id => {
+  const el = document.getElementById(id);
+  el.max = maxIdx;
+  el.value = id === 'startSlider' ? 0 : maxIdx;
+  el.addEventListener('input', () => {
+    let s = parseInt(document.getElementById('startSlider').value);
+    let e = parseInt(document.getElementById('endSlider').value);
+    if(s >= e){ if(id==='startSlider') document.getElementById('startSlider').value=Math.max(0,e-1); else document.getElementById('endSlider').value=Math.min(maxIdx,s+1); }
+    render();
+  });
+});
+
+render();
+</script>
+</body>
+</html>
