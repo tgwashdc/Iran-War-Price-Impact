@@ -48,6 +48,7 @@
   .kpi .label { font-size: 0.68rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
   .kpi .value { font-size: 1.15rem; font-weight: 700; color: #111827; }
   .kpi .change { font-size: 0.72rem; margin-top: 2px; }
+  .kpi .sub { font-size: 0.58rem; color: #b0b7c3; margin-bottom: 3px; margin-top: -2px; line-height: 1.3; }
   .up { color: #dc2626; }
   .down { color: #16a34a; }
   .flat { color: #9ca3af; }
@@ -63,23 +64,6 @@
   .footer { text-align: center; font-size: 0.7rem; color: #d1d5db; padding: 16px; }
   @media (max-width: 600px) { .grid { grid-template-columns: 1fr; padding: 12px 14px 24px; } .kpi-bar { padding: 10px 14px; } header, .controls { padding: 14px; } }
 
-  /* Live Brent price badge */
-  .live-badge {
-    background: #f0fdf4; border: 1px solid #bbf7d0; color: #374151;
-    font-size: 0.75rem; padding: 6px 13px; border-radius: 6px;
-    display: flex; align-items: center; gap: 7px; white-space: nowrap;
-    min-width: 200px;
-  }
-  .live-badge.error { background: #fef9c3; border-color: #fde68a; }
-  .live-dot {
-    width: 8px; height: 8px; background: #22c55e;
-    border-radius: 50%; display: inline-block; flex-shrink: 0;
-    animation: livepulse 2s ease-in-out infinite;
-  }
-  @keyframes livepulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50%       { opacity: 0.35; transform: scale(0.8); }
-  }
 </style>
 </head>
 <body>
@@ -116,7 +100,6 @@
   </div>
   <div class="meta">
     <span class="updated">Last updated: <strong id="lastDate">—</strong><br><span id="fetchedAt" style="font-size:0.7rem;color:#9ca3af;"></span></span>
-    <span id="liveBrentBadge" class="live-badge"><span class="live-dot"></span>Live Brent (ICE)&nbsp;<span id="liveBrentPrice" style="color:#9ca3af">loading…</span></span>
     <button class="src-btn" onclick="document.getElementById('srcModal').classList.add('open')">📚 Sources</button>
   </div>
 </header>
@@ -210,6 +193,7 @@ const RAW = [
   {date:"2026-04-11",brent:96.00,wti:94.20,jkm:17.20,ttf:14.83,hh:3.05,urea:750,dap:762,potash:488,helium:69.00,helium_nea:152.70,fbx11:null,note:"Pakistan talks commence — Vance, Witkoff, Kushner meet Iranian FM Araghchi in Islamabad; Brent retreats to $96.00 (-1.7%) as traders lighten war premium ahead of potential ceasefire extension; WTI $94.20; gas markets stable; Hormuz still IRGC-supervised; talks expected to last overnight"},
   {date:"2026-04-12",brent:100.50,wti:100.30,jkm:17.20,ttf:14.83,hh:3.05,urea:750,dap:762,potash:488,helium:69.00,helium_nea:152.70,fbx11:null,note:"Pakistan talks collapse after 21 hours — Vance: 'no deal'; Iran refuses enrichment halt and full Hormuz opening; Trump announces US Navy Hormuz blockade 'immediately'; oil futures surge to ~$100.50 Brent / $100.30 WTI; blockade targets Iranian port access (not all Hormuz traffic), effective 10am ET Monday; WTI approaches Brent parity"},
   {date:"2026-04-13",brent:102.78,wti:96.57,jkm:19.49,ttf:14.13,hh:3.05,urea:795,dap:762,potash:488,helium:69.00,helium_nea:152.70,fbx11:null,note:"US Navy Hormuz blockade takes effect 10am ET — Brent initially reverses to $95.20 from $102+ open, then recovers to $102.78 (+7.98% session) as peace talks failure and blockade scope re-assessed; WTI $96.57; JKM surges to $19.49 (+13.3%) on renewed Ras Laffan/Hormuz uncertainty; TTF €44.46/MWh ($14.13); Urea FOB ME $795/mt (+6%); Iran vows 'harsh response'; Hormuz Day 45 — FT/ICE confirmed $102.80"},
+  {date:"2026-04-14",brent:102.47,wti:98.01,jkm:19.49,ttf:14.98,hh:3.05,urea:795,dap:762,potash:488,helium:69.00,helium_nea:152.70,fbx11:null,note:"Blockade Day 2 — US Navy Hormuz blockade holds; Iran parliament speaker Ghalibaf warns Americans will be 'nostalgic for $4–5 gas'; IRGC threatens 'severe response' to any US naval approach to strait; Brent $102.47 = ICE BRN26 (Jun front month, exp ~Apr 30); WTI $98.01 = NYMEX CLK26 (May, exp ~Apr 22 — rolling); JKM stable at $19.49 (blockade scope confirmed as Iranian-port-only); TTF rebounds to €47.27/MWh ($14.98) as European traders reassess short-term supply risk; UN FAO warns of global food crisis if Hormuz doesn't reopen; Hormuz Day 46"},
 ];
 
 // ── CHART REGISTRY ────────────────────────────────────────────────────────
@@ -275,9 +259,10 @@ function render(){
   const last = slice[slice.length-1];
 
   // KPI bar
+  const { brent: brentInfo, wti: wtiInfo } = getContractInfo();
   const kpis = [
-    { label:'Brent',      val:last.brent,      unit:'$/bbl',    chg: pct(last.brent,  slice[0].brent)  },
-    { label:'WTI',        val:last.wti,        unit:'$/bbl',    chg: pct(last.wti,    slice[0].wti)    },
+    { label:'Brent',      sub: brentInfo.label, val:last.brent, unit:'$/bbl',    chg: pct(last.brent,  slice[0].brent)  },
+    { label:'WTI',        sub: wtiInfo.label,   val:last.wti,   unit:'$/bbl',    chg: pct(last.wti,    slice[0].wti)    },
     { label:'JKM',        val:last.jkm,        unit:'$/MMBtu',  chg: pct(last.jkm,    slice[0].jkm)    },
     { label:'TTF',        val:last.ttf,        unit:'$/MMBtu',  chg: pct(last.ttf,    slice[0].ttf)    },
     { label:'Henry Hub',  val:last.hh,         unit:'$/MMBtu',  chg: pct(last.hh,     slice[0].hh)     },
@@ -293,15 +278,15 @@ function render(){
     const cls = c === null ? 'flat' : c > 0 ? 'up' : c < 0 ? 'down' : 'flat';
     const arrow = c === null ? '' : c > 0 ? '▲' : c < 0 ? '▼' : '—';
     const chgTxt = c !== null ? `${arrow} ${Math.abs(c)}% vs start` : 'weekly only';
-    return `<div class="kpi"><div class="label">${k.label}</div>
+    return `<div class="kpi"><div class="label">${k.label}</div>${k.sub ? `<div class="sub">${k.sub}</div>` : ''}
       <div class="value">${k.val != null ? k.val.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : 'N/A'}<small style="font-size:0.6rem;color:#6b7280;margin-left:3px">${k.unit}</small></div>
       <div class="change ${cls}">${chgTxt}</div></div>`;
   }).join('');
 
   // Oil chart
   makeChart('oilChart',[
-    ds('Brent (ICE)',  slice.map((r,i)=>({x:labels[i],y:r.brent})), COLORS.brent),
-    ds('WTI (NYMEX)',  slice.map((r,i)=>({x:labels[i],y:r.wti})),   COLORS.wti, true),
+    ds(`Brent · ${brentInfo.label}`,  slice.map((r,i)=>({x:labels[i],y:r.brent})), COLORS.brent),
+    ds(`WTI · ${wtiInfo.label}`,      slice.map((r,i)=>({x:labels[i],y:r.wti})),   COLORS.wti, true),
   ], 'USD / bbl');
 
   // Gas chart
@@ -360,45 +345,35 @@ const maxIdx = RAW.length - 1;
   });
 });
 
-render();
+// ── CONTRACT MONTH HELPER ────────────────────────────────────────────────
+// Brent and WTI are always annotated to the SAME delivery month (anchored to
+// the ICE Brent front month). This keeps the oil chart comparable.
+//
+// ICE Brent front month: expires ~last business day of the 2nd month preceding
+// delivery, so delivery is always ~2 calendar months ahead of today.
+// e.g. on Apr 14 → front month = Jun 2026 (BRN26); after Apr 30 → Jul 2026 (BRQ26).
+//
+// NYMEX WTI is matched to the same delivery month as Brent (not its own front month).
+// e.g. on Apr 14, Brent front = Jun → WTI uses CLM26 (Jun 2026) too.
+function getContractInfo() {
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const now = new Date();
+  const m = now.getMonth(), y = now.getFullYear();
 
-// ── LIVE BRENT PRICE WIDGET ──────────────────────────────────────────────
-// Fetches ICE Brent front-month (BZ=F) via Yahoo Finance through a CORS proxy.
-// Updates every 60 seconds. Gracefully shows last known value on failure.
-async function fetchLiveBrent() {
-  const badge   = document.getElementById('liveBrentBadge');
-  const priceEl = document.getElementById('liveBrentPrice');
-  try {
-    const target = 'https://query1.finance.yahoo.com/v8/finance/chart/BZ=F?interval=1m&range=1d';
-    const proxy  = 'https://api.allorigins.win/get?url=' + encodeURIComponent(target);
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 9000);
-    const res  = await fetch(proxy, { signal: controller.signal });
-    clearTimeout(timer);
-    const wrapper = await res.json();
-    const data    = JSON.parse(wrapper.contents);
-    const meta    = data.chart.result[0].meta;
-    const price   = meta.regularMarketPrice;
-    const ref     = meta.previousClose ?? meta.chartPreviousClose ?? null;
-    const chgPct  = ref ? ((price - ref) / ref * 100) : null;
-    const sign    = chgPct !== null ? (chgPct >= 0 ? '+' : '') : '';
-    const color   = chgPct === null ? '#9ca3af' : chgPct > 0 ? '#dc2626' : '#16a34a';
-    const chgStr  = chgPct !== null ? `<span style="color:${color};margin-left:4px">${sign}${chgPct.toFixed(2)}%</span>` : '';
-    const time    = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-    priceEl.innerHTML = `<strong style="color:#111827;font-size:0.82rem">$${price.toFixed(2)}</strong>${chgStr}<span style="color:#9ca3af;font-size:0.65rem;margin-left:6px">↻ ${time}</span>`;
-    badge.classList.remove('error');
-  } catch (err) {
-    badge.classList.add('error');
-    if (priceEl.textContent === 'loading…') {
-      priceEl.innerHTML = '<span style="color:#b45309;font-size:0.72rem">feed unavailable · <a href="https://www.theice.com/products/219/Brent-Crude-Futures" target="_blank" style="color:#2563eb">ICE ↗</a></span>';
-    }
-    // Keep last known price on screen if already populated; just stop pulsing dot
-    document.querySelector('.live-dot').style.background = '#f59e0b';
-  }
+  // ICE Brent delivery month = current month + 2
+  const dm = (m + 2) % 12;
+  const dy = y + Math.floor((m + 2) / 12);
+  const deliveryStr = `${MONTHS[dm]} ${dy} futures`;
+
+  // Both instruments use the same delivery month label
+  return {
+    brent: { label: `ICE BRN · ${deliveryStr}` },
+    wti:   { label: `NYMEX CL · ${deliveryStr}` }
+  };
 }
 
-fetchLiveBrent();
-setInterval(fetchLiveBrent, 60000); // refresh every 60 seconds
+render();
+
 </script>
 </body>
 </html>
