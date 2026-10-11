@@ -690,7 +690,12 @@ body{font-family:system-ui,-apple-system,"Segoe UI","Noto Sans Devanagari","Mang
 .foot{color:#555;font-size:11px;margin-top:6px}
 .lbl{font-weight:600;font-size:12px;padding:1px 5px;border:0;background:rgba(255,255,255,.9);box-shadow:0 0 2px rgba(0,0,0,.5)}
 .leaflet-tooltip-left.lbl:before,.leaflet-tooltip-right.lbl:before,.leaflet-tooltip-top.lbl:before{display:none}
-@media (max-width:640px){.panel{font-size:12px;max-height:48vh}}
+@media (max-width:640px){.panel{font-size:12px;max-height:62vh}}
+.panel.closed{display:none}
+.panel{position:relative}
+.panel .x{position:sticky;top:0;float:right;margin:-4px -6px 0 8px;width:30px;height:30px;border:0;border-radius:50%;background:#eee;color:#222;font:700 16px/30px system-ui,sans-serif;cursor:pointer;padding:0}
+.legtab{background:#fff;border:0;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,.4);padding:9px 14px;font:600 14px/1.2 system-ui,-apple-system,"Noto Sans Devanagari","Mangal",sans-serif;color:#1b1b1b;cursor:pointer}
+.legtab[aria-expanded=true]{background:#1b1b1b;color:#fff}
 
 </style>
 </head>
@@ -833,7 +838,7 @@ var Panel = L.Control.extend({options:{position:"bottomleft"}, onAdd:function(){
   var d = L.DomUtil.create("div", "panel");
   var drow = function(k){ return '<div class="dr"><span>'+T[k]+'</span><b id="d-'+k+'">'+T.d_wait+'</b></div>'; };
   d.innerHTML =
-    '<h1>'+T.title+'</h1><div class="sub">'+T.subtitle+'</div>'+
+    '<button type="button" class="x" aria-label="Close">✕</button><h1>'+T.title+'</h1><div class="sub">'+T.subtitle+'</div>'+
     '<details open><summary>'+T.legend+'</summary>'+
     '<div class="row"><span class="sw ok"></span><span>'+T.l_ok+'</span></div>'+
     '<div class="row"><span class="sw cut"></span><span>'+T.l_cut+'</span></div>'+
@@ -855,7 +860,22 @@ var Panel = L.Control.extend({options:{position:"bottomleft"}, onAdd:function(){
   if (window.innerWidth < 900){ var ds = d.querySelectorAll("details"); for (var i=1;i<ds.length;i++) ds[i].removeAttribute("open"); }
   return d;
 }});
+// Tab that summons the legend panel; the panel starts closed on phones.
+var LegTab = L.Control.extend({options:{position:"bottomleft"}, onAdd:function(){
+  var b = L.DomUtil.create("button", "legtab");
+  b.type = "button"; b.textContent = "ⓘ " + "सङ्केत र विवरण";
+  L.DomEvent.disableClickPropagation(b);
+  return b;
+}});
+var legTab = new LegTab().addTo(map).getContainer();
 var panel = new Panel().addTo(map);
+function setPanel(open){
+  panel.getContainer().classList.toggle("closed", !open);
+  legTab.setAttribute("aria-expanded", open ? "true" : "false");
+}
+legTab.addEventListener("click", function(){ setPanel(panel.getContainer().classList.contains("closed")); });
+panel.getContainer().querySelector(".x").addEventListener("click", function(){ setPanel(false); });
+setPanel(window.innerWidth >= 900);
 var root = panel.getContainer();
 statusEl = root.querySelector("#snap");
 Object.keys(G).forEach(function(k){ dEls[k] = root.querySelector("#d-"+k); });
